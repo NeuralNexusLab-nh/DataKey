@@ -75,16 +75,16 @@ const THEME_CSS = `
     h2 { border-bottom: 2px solid #5500aa; padding-bottom: 10px; }
     h3 { margin-top: 30px; color: #00ff41; text-shadow: 0 0 5px #00ff41; }
 
-    /* Code Block Styling - Fixed newlines using PRE tag */
+    /* Code Block Styling */
     pre {
         background: #000;
         border: 1px dashed #d800ff;
         padding: 15px;
-        color: #00d2ff; /* Cyan for code */
+        color: #00d2ff;
         font-family: 'Courier New', Courier, monospace;
         overflow-x: auto;
         margin: 10px 0;
-        white-space: pre; /* Keeps formatting */
+        white-space: pre;
         box-shadow: inset 0 0 10px #220044;
     }
 
@@ -154,8 +154,7 @@ const THEME_CSS = `
     input:focus { outline: none; }
     
     .comment { color: #666; font-style: italic; }
-    .string { color: #e6db74; }
-    .key { color: #f92672; }
+    .dynamic-domain { font-weight: bold; }
 
 </style>
 `;
@@ -229,10 +228,38 @@ app.get('/', (req, res) => {
 
         function copyUrl() {
             const copyText = document.getElementById("dbUrl");
+            
+            // 1. 選取文字 (手機與電腦皆適用)
             copyText.select();
             copyText.setSelectionRange(0, 99999); 
-            navigator.clipboard.writeText(copyText.value);
-            alert("URL COPIED TO CLIPBOARD");
+
+            // 2. 嘗試使用現代 Clipboard API
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(copyText.value)
+                    .then(() => alert("URL COPIED TO CLIPBOARD"))
+                    .catch((err) => {
+                        // 如果現代 API 失敗 (例如非 HTTPS 環境)，嘗試降級方法
+                        console.log("Clipboard API failed, trying fallback...", err);
+                        fallbackCopy();
+                    });
+            } else {
+                // 不支援 Clipboard API，直接使用降級方法
+                fallbackCopy();
+            }
+        }
+
+        // 降級複製方法 (相容性較高)
+        function fallbackCopy() {
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    alert("URL COPIED TO CLIPBOARD");
+                } else {
+                    throw new Error("execCommand returned false");
+                }
+            } catch (err) {
+                alert("COPY FAILED: Please manually select and copy the URL.");
+            }
         }
     </script>
 </body>
@@ -353,7 +380,6 @@ Body (JSON):
 
     <script>
         // Dynamic Domain Update
-        // 這段 JS 會在網頁載入後，自動把所有 class 為 dynamic-domain 的文字換成當前網域
         const domain = window.location.origin;
         const elements = document.getElementsByClassName('dynamic-domain');
         for(let el of elements) {
@@ -434,5 +460,4 @@ app.post('/api', (req, res) => {
 // 啟動伺服器
 app.listen(PORT, () => {
     console.log(`DataKey System Online on port ${PORT}`);
-    console.log(`DB path: ${DB_DIR}`);
 });

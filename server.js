@@ -434,4 +434,5 @@ app.post('/api', (req, res) => {
 // 啟動伺服器
 app.listen(PORT, () => {
     console.log(`DataKey System Online on port ${PORT}`);
+    console.log(`DB path: ${DB_DIR}`});
 });
